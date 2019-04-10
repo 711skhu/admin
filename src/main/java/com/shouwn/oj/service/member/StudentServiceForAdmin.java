@@ -1,4 +1,4 @@
-package com.shouwn.oj.service;
+package com.shouwn.oj.service.member;
 
 import org.springframework.stereotype.Service;
 

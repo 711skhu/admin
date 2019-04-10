@@ -1,4 +1,4 @@
-package com.shouwn.oj.controller;
+package com.shouwn.oj.controller.problem;
 
 import org.springframework.web.bind.annotation.RestController;
 
