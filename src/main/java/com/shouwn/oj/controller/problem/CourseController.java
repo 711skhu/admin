@@ -95,7 +95,7 @@ public class CourseController {
                                          @PathVariable Boolean enabled){
 
         try{
-            courseServiceForAdmin.inactiveCourse(requesterId, courseId, enabled);
+            courseServiceForAdmin.activeCourse(requesterId, courseId, enabled);
         }catch (EntityNotFoundException e) {
             return CommonResponse.builder()
                     .status(HttpStatus.NOT_FOUND)

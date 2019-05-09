@@ -10,7 +10,6 @@ import com.shouwn.oj.repository.problem.CourseRepository;
 import com.shouwn.oj.service.member.AdminService;
 
 import com.shouwn.oj.service.member.StudentService;
-import org.checkerframework.checker.units.qual.C;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
