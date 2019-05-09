@@ -57,7 +57,7 @@ public class CourseServiceForAdmin {
 	public AdminCourseSaveResponse makeCourse(Long adminId, AdminCourseSaveRequest dto) throws EntityNotFoundException {
 
 		Admin professor = adminService.findById(adminId);
-		Course course = professor.makeCourse(dto);
+		Course course = professor.makeCourse(dto.getCourseName(), dto.getCourseDescription());
 
 		return responseDto(course);
 	}
@@ -75,7 +75,7 @@ public class CourseServiceForAdmin {
 
 		Admin professor = adminService.findById(adminId);
 		Course findCourse = courseService.findCourseById(courseId); // 해당 강좌 존재 유무
-		Course course = professor.updateCourse(findCourse.getId(),dto);
+		Course course = professor.updateCourse(findCourse.getId(),dto.getCourseName(),dto.getCourseDescription());
 
 		return responseDto(course);
 	}
@@ -88,11 +88,11 @@ public class CourseServiceForAdmin {
 	 * @param enabled
 	 * @throws EntityNotFoundException
 	 */
-	public void inactiveCourse(Long adminId, Long courseId, Boolean enabled) throws EntityNotFoundException{
+	public void activeCourse(Long adminId, Long courseId, Boolean enabled) throws EntityNotFoundException{
 
 		Admin professor = adminService.findById(adminId);
 
-		professor.inactiveCourse(courseId, enabled);
+		professor.activeCourse(courseId, enabled);
 	}
 
 	/**
