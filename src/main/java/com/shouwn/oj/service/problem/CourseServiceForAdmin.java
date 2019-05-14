@@ -6,10 +6,8 @@ import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
 import com.shouwn.oj.model.response.admin.AdminCourseSaveResponse;
-import com.shouwn.oj.repository.problem.CourseRepository;
 import com.shouwn.oj.service.member.AdminService;
 
-import com.shouwn.oj.service.member.StudentService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,17 +17,10 @@ public class CourseServiceForAdmin {
 
 	private final AdminService adminService;
 	private final CourseService courseService;
-	private final StudentService studentService;
-	private final CourseRepository courseRepository;
 
-	public CourseServiceForAdmin(CourseRepository courseRepository,
-							     AdminService adminService,
-								 CourseService courseService,
-								 StudentService studentService) {
-		this.courseRepository = courseRepository;
+	public CourseServiceForAdmin(AdminService adminService, CourseService courseService) {
 		this.adminService = adminService;
 		this.courseService = courseService;
-		this.studentService = studentService;
 	}
 
 	private AdminCourseSaveResponse responseDto(Course course){
@@ -108,6 +99,5 @@ public class CourseServiceForAdmin {
 
 		// TODO 학생 입장에서 해당 course를 삭제
 		// studentService.deleteCourse(courseId);
-
 	}
 }
