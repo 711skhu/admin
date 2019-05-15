@@ -6,13 +6,15 @@ import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
 import com.shouwn.oj.model.response.ApiResponse;
 import com.shouwn.oj.model.response.CommonResponse;
+import com.shouwn.oj.model.response.admin.AdminCourseList;
 import com.shouwn.oj.model.response.admin.AdminCourseSaveResponse;
 import com.shouwn.oj.service.problem.CourseService;
 import com.shouwn.oj.service.problem.CourseServiceForAdmin;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriBuilder;
+
+import java.util.List;
 
 @RestController("course")
 public class CourseController {
@@ -26,11 +28,22 @@ public class CourseController {
         this.courseServiceForAdmin = courseServiceForAdmin;
     }
 
+    // get courseList
+    @GetMapping
+    public ApiResponse<?> getCourseList(@RequestParam Long requesterId){
+        List<AdminCourseList> courseLists = courseServiceForAdmin.getCourseList(requesterId);
+
+        return CommonResponse.builder()
+                .status(HttpStatus.OK)
+                .message("해당 교수의 강좌 목록 리스트 성공")
+                .data(courseLists)
+                .build();
+    }
+
     // make course
     @PostMapping
     public ApiResponse<?> makeCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
-                                     @RequestBody AdminCourseSaveRequest dto,
-                                     UriBuilder uriBuilder) {
+                                     @RequestBody AdminCourseSaveRequest dto) {
 
         AdminCourseSaveResponse newCourse = courseServiceForAdmin.makeCourse(requesterId, dto);
 
@@ -41,6 +54,7 @@ public class CourseController {
                 .build();
     }
 
+    //TODO 추후 알맞은 dto로 수정. 상세 페이지에 아직 어떤 내용이 들어있는지 모름.
     // get course
     @GetMapping("/{courseId}")
     public ApiResponse<?> getCourse(@PathVariable Long courseId) {
@@ -88,9 +102,9 @@ public class CourseController {
                 .build();
     }
 
-    // inactive course.
+    // active course.
     @PutMapping("/{courseId}/{enabled}")
-    public ApiResponse<?> inactiveCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> activeCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
                                          @PathVariable Long courseId,
                                          @PathVariable Boolean enabled){
 

@@ -2,9 +2,10 @@ package com.shouwn.oj.service;
 
 import com.shouwn.oj.config.repository.RepositoryTestConfig;
 import com.shouwn.oj.model.entity.member.Admin;
+import com.shouwn.oj.model.entity.member.Student;
 import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
-import com.shouwn.oj.model.response.admin.AdminCourseSaveResponse;
+import com.shouwn.oj.model.response.admin.AdminCourseList;
 import com.shouwn.oj.service.member.AdminService;
 import com.shouwn.oj.service.problem.CourseService;
 import com.shouwn.oj.service.problem.CourseServiceForAdmin;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.persistence.EntityExistsException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,6 +47,7 @@ class CourseServiceForAdminTest {
     private Admin makeAdmin;
     private Course c;
     private AdminCourseSaveRequest dto;
+    private List<Course> courseList =  new ArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -62,10 +65,9 @@ class CourseServiceForAdminTest {
         when(adminService.makeAdmin(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(admin);
 
-        //TODO : Error - actually there were zero interactions with this mock
-        //Mockito.verify(adminService).makeAdmin("test_user", "test id", "123412345", "naver.com");
-
         makeAdmin = adminService.makeAdmin(anyString(), anyString(), anyString(), anyString());
+
+        Mockito.verify(adminService).makeAdmin(anyString(), anyString(), anyString(), anyString());
 
         // course 생성
         this.c = Course.builder()
@@ -85,23 +87,54 @@ class CourseServiceForAdminTest {
     }
 
     @Test
-    void makeCourse() {
-
+    void getCourseList(){
         when(adminService.findById(anyLong()))
                 .thenReturn(makeAdmin);
 
-        Course course = makeAdmin.makeCourse(dto.getCourseName(), dto.getCourseDescription());
+        Admin a = adminService.findById(anyLong());
+
+        courseList.add(this.c);
+
+        when(courseService.findCourseByAdminId(a.getId()))
+                .thenReturn(this.courseList);
+
+        List<Course> findCourse = courseService.findCourseByAdminId(a.getId());
+        List<AdminCourseList> test = new ArrayList<>();
+
+        for(Course course : findCourse){
+            AdminCourseList listDto = AdminCourseList.builder()
+                    .courseId(course.getId())
+                    .courseName(course.getName())
+                    .courseDescription(course.getDescription())
+                    .enabled(course.getEnabled())
+                    .build();
+            test.add(listDto);
+        }
+
+        assertEquals(courseList.get(0).getId(), test.get(0).getCourseId());
+        assertEquals(courseList.get(0).getName(), test.get(0).getCourseName());
+        assertEquals(courseList.get(0).getDescription(), test.get(0).getCourseDescription());
+
+        Mockito.verify(adminService).findById(anyLong());
+        Mockito.verify(courseService).findCourseByAdminId(anyLong());
+    }
+
+    @Test
+    void makeCourse() {
+        when(adminService.findById(anyLong()))
+                .thenReturn(makeAdmin);
+
+        Admin admin = adminService.findById(anyLong());
+
+        Course course = admin.makeCourse(dto.getCourseName(), dto.getCourseDescription());
 
         assertEquals(this.c.getName(), course.getName());
         assertEquals(this.c.getDescription(), course.getDescription());
         assertEquals(this.c.getEnabled(), course.getEnabled());
         assertEquals(this.c.getProfessor(), course.getProfessor());
 
-
-        // TODO : 에러 However, there was exactly 1 interaction with this mock: adminService.makeAdmin("", "", "", "");
-        //Mockito.verify(adminService).findById(makeAdmin.getId());
+        Mockito.verify(adminService).findById(anyLong());
     }
-
 
     /**
      * 강좌 생성시 같은 이름 있을 때. EntityExistsException
@@ -121,28 +154,84 @@ class CourseServiceForAdminTest {
         when(adminService.findById(anyLong()))
                 .thenReturn(makeAdmin);
 
+        Admin admin = adminService.findById(anyLong());
+
         when(courseService.findCourseById(anyLong()))
                 .thenReturn(this.c);
 
+        Course findCourse = courseService.findCourseById(anyLong());
+
         dto.setCourseName("test update");
-        c.setName("test update");
+        findCourse.setName("test update");
 
         List<Course> courseList = new ArrayList<>();
-        courseList.add(this.c);
-        makeAdmin.setCourses(courseList);
+        courseList.add(findCourse);
+        admin.setCourses(courseList);
 
-        Course course = makeAdmin.updateCourse(c.getId(), dto.getCourseName(), dto.getCourseDescription());
+        Course course = admin.updateCourse(findCourse.getId(), dto.getCourseName(), dto.getCourseDescription());
 
         assertEquals(dto.getCourseName(), course.getName());
         assertEquals(dto.getCourseDescription(), course.getDescription());
 
-        // TODO
-        //Mockito.verify(adminService).findById(makeAdmin.getId());
-        //Mockito.verify(courseService).findCourseById(this.c.getId());
+        Mockito.verify(adminService).findById(anyLong());
+        Mockito.verify(courseService).findCourseById(anyLong());
     }
 
     @Test
     void activeCourse() {
+        when(adminService.findById(anyLong()))
+                .thenReturn(makeAdmin);
+
+        Admin admin = adminService.findById(anyLong());
+
+        when(courseService.findCourseById(anyLong()))
+                .thenReturn(this.c);
+
+        Course findCourse = courseService.findCourseById(anyLong());
+
+        findCourse.setEnabled(true);
+        findCourse.setActiveDate(LocalDateTime.now());
+
+        Course activeCourse = admin.activeCourse(findCourse.getId(),true);
+
+        assertEquals(findCourse.getEnabled(), activeCourse.getEnabled());
+        assertEquals(findCourse.getActiveDate(), activeCourse.getActiveDate());
+
+        Mockito.verify(adminService).findById(anyLong());
+        Mockito.verify(courseService).findCourseById(anyLong());
+    }
+
+    @Test
+    void inactiveCourse(){
+        when(adminService.findById(anyLong()))
+                .thenReturn(makeAdmin);
+
+        Admin admin = adminService.findById(anyLong());
+
+        when(courseService.findCourseById(anyLong()))
+                .thenReturn(this.c);
+
+        Course findCourse = courseService.findCourseById(anyLong());
+
+        Student student = Student.builder()
+                .name("student test")
+                .username("student userName test")
+                .email("student@naver.com")
+                .password("1234512345")
+                .build();
+
+        List<Student> students = new ArrayList<>();
+        students.add(student);
+
+        findCourse.setEnabled(false);
+        findCourse.setStudents(students);
+        Course inActiveCourse = admin.activeCourse(findCourse.getId(),false);
+
+        System.out.println("student 삭제확인: " + inActiveCourse.getStudents().get(0));
+        assertEquals(findCourse.getEnabled(), inActiveCourse.getEnabled());
+
+        Mockito.verify(adminService).findById(anyLong());
+        Mockito.verify(courseService).findCourseById(anyLong());
     }
 
     @Test
