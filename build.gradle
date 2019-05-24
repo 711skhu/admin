@@ -9,4 +9,6 @@ dependencies {
 
     // test
     testCompile 'org.springframework.security:spring-security-test'
+    
+    compile project(':core')
 }
