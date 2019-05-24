@@ -1,7 +1,9 @@
 package com.shouwn.oj.service.member;
 
-import com.shouwn.oj.exception.member.MemberException;
-import com.shouwn.oj.exception.member.PasswordIncorrectException;
+import java.util.Optional;
+
+import com.shouwn.oj.exception.AuthenticationFailedException;
+import com.shouwn.oj.exception.NotFoundException;
 import com.shouwn.oj.model.entity.member.Admin;
 
 import org.springframework.stereotype.Service;
@@ -23,28 +25,35 @@ public class AdminServiceForAdmin {
 	 * @param rawPassword 관리자 패스워드 (인코딩 되지 않은)
 	 * @param email       관리자 이메일
 	 * @return 생성된 관리자 객체
-	 * @throws MemberException UsernameExistException 이미 아이디가 존재할 때 발생하는 예외
-	 *                         PasswordStrengthLeakException 비밀번호가 약할 때 발생하는 예외
-	 *                         EmailExistException 이메일이 이미 존재할 때 발생하는 예외
 	 */
 	public Admin makeAdmin(String name,
 						   String username,
 						   String rawPassword,
-						   String email) throws MemberException {
+						   String email) {
 		return adminService.makeAdmin(name, username, rawPassword, email);
 	}
 
-	public Admin login(String username, String rawPassword) throws MemberException {
-		Admin admin = adminService.findByUsername(username);
+	public Admin login(String username, String rawPassword) {
+		Optional<Admin> admin = adminService.findByUsername(username);
 
-		if (!adminService.isCorrectPassword(admin, rawPassword)) {
-			throw new PasswordIncorrectException("패스워드가 맞지 않습니다.");
+		if (!admin.isPresent()) {
+			throw new NotFoundException(username + "에 해당하는 유저가 없습니다.");
 		}
 
-		return admin;
+		if (!adminService.isCorrectPassword(admin.get(), rawPassword)) {
+			throw new AuthenticationFailedException("비밀번호가 다릅니다.");
+		}
+
+		return admin.get();
 	}
 
 	public Admin findById(Long id) {
-		return adminService.findById(id);
+		Optional<Admin> admin = adminService.findById(id);
+
+		if (!admin.isPresent()) {
+			throw new NotFoundException(id + "에 해당하는 유저가 없습니다.");
+		}
+
+		return admin.get();
 	}
 }
