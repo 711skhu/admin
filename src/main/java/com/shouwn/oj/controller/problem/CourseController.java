@@ -6,17 +6,18 @@ import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
 import com.shouwn.oj.model.response.ApiResponse;
 import com.shouwn.oj.model.response.CommonResponse;
-import com.shouwn.oj.model.response.admin.AdminCourseList;
-import com.shouwn.oj.model.response.admin.AdminCourseSaveResponse;
+import com.shouwn.oj.model.response.admin.AdminCourseResponse;
 import com.shouwn.oj.service.problem.CourseService;
 import com.shouwn.oj.service.problem.CourseServiceForAdmin;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController("course")
+@RestController("courses")
+@PreAuthorize("isAuthenticated()")
 public class CourseController {
 
     private final CourseService courseService;
@@ -30,8 +31,8 @@ public class CourseController {
 
     // get courseList
     @GetMapping
-    public ApiResponse<?> getCourseList(@RequestParam Long requesterId){
-        List<AdminCourseList> courseLists = courseServiceForAdmin.getCourseList(requesterId);
+    public ApiResponse<?> getCourseList(@RequestAttribute Long requesterId){
+        List<AdminCourseResponse> courseLists = courseServiceForAdmin.getCourseList(requesterId);
 
         return CommonResponse.builder()
                 .status(HttpStatus.OK)
@@ -42,10 +43,10 @@ public class CourseController {
 
     // make course
     @PostMapping
-    public ApiResponse<?> makeCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> makeCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
                                      @RequestBody AdminCourseSaveRequest dto) {
 
-        AdminCourseSaveResponse newCourse = courseServiceForAdmin.makeCourse(requesterId, dto);
+        AdminCourseResponse newCourse = courseServiceForAdmin.makeCourse(requesterId, dto);
 
         return CommonResponse.builder()
                 .status(HttpStatus.CREATED)
@@ -79,16 +80,14 @@ public class CourseController {
 
     // update course
     @PutMapping("/{courseId}")
-    public ApiResponse<?> updateCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> updateCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
                                        @PathVariable Long courseId,
                                        @RequestBody AdminCourseSaveRequest dto) {
 
-        AdminCourseSaveResponse  updateCourse;
+        AdminCourseResponse updateCourse;
 
         try {
             updateCourse = courseServiceForAdmin.updateCourse(requesterId, courseId, dto);
-
-
         }catch (EntityNotFoundException e) {
             return CommonResponse.builder()
                     .status(HttpStatus.NOT_FOUND)
@@ -102,29 +101,9 @@ public class CourseController {
                 .build();
     }
 
-    // active course.
-    @PutMapping("/{courseId}/{enabled}")
-    public ApiResponse<?> activeCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
-                                         @PathVariable Long courseId,
-                                         @PathVariable Boolean enabled){
-
-        try{
-            courseServiceForAdmin.activeCourse(requesterId, courseId, enabled);
-        }catch (EntityNotFoundException e) {
-            return CommonResponse.builder()
-                    .status(HttpStatus.NOT_FOUND)
-                    .message(courseId + "에 해당하는 강좌가 없습니다.")
-                    .build();
-        }
-        return CommonResponse.builder()
-                .status(HttpStatus.OK)
-                .message("활성화/비활성화 작업 성공")
-                .build();
-    }
-
     //delete course
     @DeleteMapping("/{courseId}")
-    public ApiResponse<?> deleteCourse(@RequestParam Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> deleteCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
                                        @PathVariable Long courseId){
         try{
             courseServiceForAdmin.deleteCourse(requesterId, courseId);

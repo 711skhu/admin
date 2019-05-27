@@ -14,12 +14,14 @@ import lombok.Setter;
 @Getter
 public class AdminCourseSaveRequest {
 
-    private String courseName;
-    private String courseDescription;
+    private String name;
+    private String description;
+    private Boolean enabled;
 
     @Builder
-    public AdminCourseSaveRequest(String courseName, String courseDescription){
-        this.courseName = courseName;
-        this.courseDescription = courseDescription;
+    public AdminCourseSaveRequest(String name, String description, Boolean enabled){
+        this.name = name;
+        this.description = description;
+        this.enabled = enabled;
     }
 }
