@@ -43,7 +43,7 @@ public class CourseController {
 
     // make course
     @PostMapping
-    public ApiResponse<?> makeCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> makeCourse(@RequestAttribute Long requesterId,
                                      @RequestBody AdminCourseSaveRequest dto) {
 
         AdminCourseResponse newCourse = courseServiceForAdmin.makeCourse(requesterId, dto);
@@ -80,7 +80,7 @@ public class CourseController {
 
     // update course
     @PutMapping("/{courseId}")
-    public ApiResponse<?> updateCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> updateCourse(@RequestAttribute Long requesterId,
                                        @PathVariable Long courseId,
                                        @RequestBody AdminCourseSaveRequest dto) {
 
@@ -103,7 +103,7 @@ public class CourseController {
 
     //delete course
     @DeleteMapping("/{courseId}")
-    public ApiResponse<?> deleteCourse(@RequestAttribute Long requesterId, // TODO 일반 adminId 가 아니라 Spring Security 에 의한 사용자 id가 필요.@RequestParam아닌 다른 어노테이션임.
+    public ApiResponse<?> deleteCourse(@RequestAttribute Long requesterId,
                                        @PathVariable Long courseId){
         try{
             courseServiceForAdmin.deleteCourse(requesterId, courseId);
