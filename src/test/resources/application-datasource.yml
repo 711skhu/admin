@@ -1,6 +1,0 @@
-spring:
-  datasource:
-    driverClassName: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://shouwn.com:33306/skhu?characterEncoding=UTF-8&serverTimezone=UTC&rewriteBatchedStatements=true
-    username: skhu
-    password: 62@2S0ftw@are
