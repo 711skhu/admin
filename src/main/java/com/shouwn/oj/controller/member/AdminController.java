@@ -1,6 +1,5 @@
 package com.shouwn.oj.controller.member;
 
-import com.shouwn.oj.exception.member.*;
 import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.request.admin.AdminSignUpRequest;
 import com.shouwn.oj.model.request.member.MemberLoginRequest;
@@ -30,53 +29,22 @@ public class AdminController {
 
 	@PostMapping
 	public ApiResponse<?> makeAdmin(@RequestBody AdminSignUpRequest signUpRequest) {
-		try {
-			Admin createdAdmin = adminService.makeAdmin(
-					signUpRequest.getName(),
-					signUpRequest.getUsername(),
-					signUpRequest.getPassword(),
-					signUpRequest.getEmail()
-			);
+		adminService.makeAdmin(
+				signUpRequest.getName(),
+				signUpRequest.getUsername(),
+				signUpRequest.getPassword(),
+				signUpRequest.getEmail()
+		);
 
-			return CommonResponse.builder()
-					.status(HttpStatus.CREATED)
-					.message("관리자 생성 성공")
-					.build();
-		} catch (UsernameExistException e) {
-			return CommonResponse.builder()
-					.status(HttpStatus.CONFLICT)
-					.message("아이디 중복")
-					.build();
-		} catch (PasswordStrengthLeakException e) {
-			return CommonResponse.builder()
-					.status(HttpStatus.PRECONDITION_FAILED)
-					.message("비밀번호 강도가 약함")
-					.build();
-		} catch (EmailExistException e) {
-			return CommonResponse.builder()
-					.status(HttpStatus.CONFLICT)
-					.message("이메일 중복")
-					.build();
-		}
+		return CommonResponse.builder()
+				.status(HttpStatus.CREATED)
+				.message("관리자 생성 성공")
+				.build();
 	}
 
 	@PostMapping("login")
 	public ApiResponse<?> login(@RequestBody MemberLoginRequest loginRequest) {
-		Admin admin;
-
-		try {
-			admin = adminService.login(loginRequest.getUsername(), loginRequest.getPassword());
-		} catch (UsernameNotExistException e) {
-			return CommonResponse.builder()
-					.status(HttpStatus.PRECONDITION_FAILED)
-					.message(loginRequest.getUsername() + " 에 해당하는 사용자 아이디가 없습니다.")
-					.build();
-		} catch (PasswordIncorrectException e) {
-			return CommonResponse.builder()
-					.status(HttpStatus.FORBIDDEN)
-					.message("비밀번호가 다릅니다.")
-					.build();
-		}
+		Admin admin = adminService.login(loginRequest.getUsername(), loginRequest.getPassword());
 
 		String jwt = jwtProvider.generateJwt(admin.getId());
 
