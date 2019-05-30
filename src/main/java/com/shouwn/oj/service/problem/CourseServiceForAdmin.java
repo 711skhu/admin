@@ -4,17 +4,15 @@ import javax.persistence.EntityNotFoundException;
 
 import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.entity.problem.Course;
-import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
 import com.shouwn.oj.model.response.admin.AdminCourseResponse;
 import com.shouwn.oj.service.member.AdminService;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-@Transactional
 @Service
 public class CourseServiceForAdmin {
 
@@ -34,7 +32,6 @@ public class CourseServiceForAdmin {
                 .description(course.getDescription())
                 .enabled(course.getEnabled())
                 .activeTime(course.getActiveDate())
-                .problems(course.getProblems())
                 .build();
 
         return response;
@@ -46,15 +43,11 @@ public class CourseServiceForAdmin {
      * @param adminId
      * @return
      */
-    public List<AdminCourseResponse> getCourseList(Long adminId) throws EntityNotFoundException {
+    public List<Course> getCourseList(Long adminId){
 
         List<Course> courseList = courseService.findCourseByAdminId(adminId);
-        List<AdminCourseResponse> adminCourseLists = new ArrayList<>();
 
-        for (Course c : courseList) {
-            adminCourseLists.add(responseDto(c));
-        }
-        return adminCourseLists;
+        return courseList;
     }
 
     /**
@@ -65,12 +58,14 @@ public class CourseServiceForAdmin {
      * @return 생성된 Course 정보 AdminCourseResponse
      * @throws EntityNotFoundException adminId 로 Admin 을 찾을 수 없을 때 발생하는 예외
      */
-    public AdminCourseResponse makeCourse(Long adminId, AdminCourseSaveRequest dto) throws EntityNotFoundException {
+    public void makeCourse(Long adminId, String name, String description){
+        Optional<Admin> professor = adminService.findById(adminId);
+        Course course = professor.makeCourse(name, description);
+    }
 
-        Admin professor = adminService.findById(adminId);
-        Course course = professor.makeCourse(dto.getName(), dto.getDescription());
-
-        return responseDto(course);
+    public Course getCourse(Long adminId, Long courseId) throws EntityNotFoundException{
+        Course course = courseService.findCourseById(courseId);
+        return course;
     }
 
     /**
@@ -82,13 +77,12 @@ public class CourseServiceForAdmin {
      * @return 수정된 Course 정보 AdminCourseResponse
      * @throws EntityNotFoundException
      */
-    public AdminCourseResponse updateCourse(Long adminId, Long courseId, AdminCourseSaveRequest dto) throws EntityNotFoundException {
 
-        Admin professor = adminService.findById(adminId);
+    public void updateCourse(Long adminId, Long courseId, String name, String description, Boolean enabled){
+
+        Optional<Admin> professor = adminService.findById(adminId);
         Course findCourse = courseService.findCourseById(courseId); // 해당 강좌 존재 유무
-        Course course = professor.updateCourse(findCourse.getId(), dto.getName(), dto.getDescription(), dto.getEnabled());
-
-        return responseDto(course);
+        Course course = professor.updateCourse(findCourse.getId(),name, description, enabled);
     }
 
     /**
@@ -101,9 +95,7 @@ public class CourseServiceForAdmin {
      */
     public void deleteCourse(Long adminId, Long courseId) throws EntityNotFoundException {
 
-        Admin professor = adminService.findById(adminId);
-
-        professor.deleteCourse(courseId);
+        Optional<Admin> professor = adminService.findById(adminId);
 
         // TODO 학생 입장에서 해당 course를 삭제
         // studentService.deleteCourse(courseId);
