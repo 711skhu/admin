@@ -1,33 +1,36 @@
 package com.shouwn.oj.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import com.shouwn.oj.config.repository.RepositoryTestConfig;
+import com.shouwn.oj.exception.AlreadyExistException;
+import com.shouwn.oj.exception.AuthenticationFailedException;
+import com.shouwn.oj.exception.IllegalStateException;
 import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.entity.member.Student;
 import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
-import com.shouwn.oj.model.response.admin.AdminCourseResponse;
 import com.shouwn.oj.service.member.AdminService;
 import com.shouwn.oj.service.problem.CourseService;
 import com.shouwn.oj.service.problem.CourseServiceForAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import javax.persistence.EntityExistsException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
@@ -36,195 +39,210 @@ import static org.mockito.Mockito.when;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CourseServiceForAdminTest {
 
-    @Mock
-    private AdminService adminService;
+	@Mock
+	private AdminService adminService;
 
-    @Mock
-    private CourseService courseService;
+	@Mock
+	private CourseService courseService;
 
-    @Mock
-    private Student mockStudent;
+	@Mock
+	private Student mockStudent;
 
-    @InjectMocks
-    private CourseServiceForAdmin courseServiceForAdmin;
+	@InjectMocks
+	private CourseServiceForAdmin courseServiceForAdmin;
 
-    private Admin makeAdmin;
-    private Course c;
-    private AdminCourseSaveRequest dto;
-    private List<Course> courseList = new ArrayList<>();
+	private Admin admin;
+	private Course course;
+	private AdminCourseSaveRequest dto;
+	private List<Course> courseList = new ArrayList<>();
 
-    @BeforeEach
-    void setUp() {
+	@BeforeEach
+	void setUp() {
 
-        // admin 생성
-        Admin admin = Admin.builder()
-                .name("test_user")
-                .username("test id")
-                .password("123412345")
-                .email("naver.com")
-                .build();
+		// admin 생성
+		this.admin = Admin.builder()
+				.name("test_admin")
+				.username("test_admin_userName")
+				.password("123412345")
+				.email("testAdmin@naver.com")
+				.build();
+		admin.setId(1L);
 
-        admin.setId(1L);
+		// course 생성
+		this.course = Course.builder()
+				.name("test")
+				.description("test description")
+				.enabled(false)
+				.professor(this.admin)
+				.build();
+		this.course.setId(1L);
 
-        when(adminService.makeAdmin(anyString(), anyString(), anyString(), anyString()))
-                .thenReturn(admin);
+		courseList.add(this.course);
+		this.admin.setCourses(courseList);
 
-        makeAdmin = adminService.makeAdmin(anyString(), anyString(), anyString(), anyString());
+		// req dto
+		this.dto = AdminCourseSaveRequest.builder()
+				.name("test_dto")
+				.description("test description_dto")
+				.enabled(true)
+				.build();
 
-        Mockito.verify(adminService).makeAdmin(anyString(), anyString(), anyString(), anyString());
+	}
 
-        // course 생성
-        this.c = Course.builder()
-                .name("test")
-                .description("test description")
-                .enabled(false)
-                .professor(makeAdmin)
-                .build();
-        this.c.setId(1L);
+	@Test
+	void getCourseList() {
 
-        // req dto
-        this.dto = AdminCourseSaveRequest.builder()
-                .name("test")
-                .description("test description")
-                .enabled(false)
-                .build();
+		when(courseService.findCourseByAdminId(anyLong()))
+				.thenReturn(this.courseList);
 
-    }
+		List<Course> result = courseServiceForAdmin.getCourseList(this.admin.getId());
 
-    @Test
-    void getCourseList() {
+		assertEquals(courseList.get(0).getId(), result.get(0).getId());
+		assertEquals(courseList.get(0).getName(), result.get(0).getName());
+		assertEquals(courseList.get(0).getDescription(), result.get(0).getDescription());
+		assertEquals(courseList.get(0).getEnabled(), result.get(0).getEnabled());
 
-        courseList.add(this.c);
+		verify(courseService).findCourseByAdminId(this.admin.getId());
+	}
 
-        when(courseService.findCourseByAdminId(anyLong()))
-                .thenReturn(this.courseList);
+	@Test
+	void makeCourseSuccess() {
 
-        List<AdminCourseResponse> result = courseServiceForAdmin.getCourseList(makeAdmin.getId());
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
-        assertEquals(courseList.get(0).getId(), result.get(0).getId());
-        assertEquals(courseList.get(0).getName(), result.get(0).getName());
-        assertEquals(courseList.get(0).getDescription(), result.get(0).getDescription());
-        assertEquals(courseList.get(0).getEnabled(), result.get(0).getEnabled());
+		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
 
-        Mockito.verify(courseService).findCourseByAdminId(this.makeAdmin.getId());
-    }
+		courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription());
 
-    @Test
-    void makeCourse() {
-        when(adminService.findById(anyLong()))
-                .thenReturn(makeAdmin);
+		verify(adminService).findById(this.admin.getId());
+		verify(courseService).saveCourse(saveCaptor.capture());
+	}
 
-        AdminCourseResponse result = courseServiceForAdmin.makeCourse(this.makeAdmin.getId(), this.dto);
+	/**
+	 * 강좌 생성시 같은 이름 있을 때. AlreadyExistException
+	 */
+	@Test
+	void makeCourseThrowAlreadyExistException() {
 
-        assertEquals(this.c.getName(), result.getName());
-        assertEquals(this.c.getDescription(), result.getDescription());
-        assertEquals(this.c.getEnabled(), result.getEnabled());
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
-        Mockito.verify(adminService).findById(this.makeAdmin.getId());
-    }
+		this.dto.setName(this.course.getName());
 
-    /**
-     * 강좌 생성시 같은 이름 있을 때. EntityExistsException
-     */
-    @Test
-    void makeCourseThrowEntityExistsException() {
-        List<Course> courses = new ArrayList<>();
-        courses.add(this.c);
-        makeAdmin.setCourses(courses);
+		assertThrows(AlreadyExistException.class, ()
+				-> courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription()));
 
-        assertThrows(EntityExistsException.class, () -> makeAdmin.makeCourse(dto.getName(), dto.getDescription()));
-    }
+		verify(courseService, Mockito.times(0)).saveCourse(this.course);
+	}
 
-    @Test
-    void updateCourse() {
+	@Test
+	void updateCourseSuccess() {
 
-        when(adminService.findById(anyLong()))
-                .thenReturn(makeAdmin);
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(this.course);
 
-        when(courseService.findCourseById(anyLong()))
-                .thenReturn(this.c);
+		when(courseService.findCourseByAdminId(anyLong()))
+				.thenReturn(this.courseList);
 
-        dto.setName("test update");
-        this.c.setName(dto.getName());
+		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
 
-        // add to admin
-        courseList.clear();
-        courseList.add(this.c);
+		dto.setName("test update name");
+		dto.setDescription("test update description");
 
-        this.makeAdmin.setCourses(courseList);
+		courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
+				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled());
 
-        //result
-        AdminCourseResponse result = courseServiceForAdmin.updateCourse(this.makeAdmin.getId(), this.c.getId(), this.dto);
+		verify(courseService).findCourseById(this.course.getId());
+		verify(courseService).findCourseByAdminId(this.admin.getId());
+		verify(courseService).saveCourse(saveCaptor.capture());
+	}
 
-        assertEquals(this.c.getId(), result.getId());
-        assertEquals(this.c.getName(), result.getName());
-        assertEquals(this.c.getDescription(), result.getDescription());
+	/**
+	 * 강좌 조회시 해당 강좌 없을 때. IllegalStateException
+	 */
+	@Test
+	void updateCourseThrowIllegalStateException() {
 
-        Mockito.verify(adminService).findById(this.makeAdmin.getId());
-        Mockito.verify(courseService).findCourseById(this.c.getId());
-    }
+		assertThrows(IllegalStateException.class, ()
+				-> courseServiceForAdmin.updateCourse(this.admin.getId(), 3L,
+				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
-    @Test
-    void activeCourse() {
-        when(adminService.findById(anyLong()))
-                .thenReturn(makeAdmin);
+		verify(courseService, Mockito.times(0)).saveCourse(this.course);
+	}
 
-        when(courseService.findCourseById(anyLong()))
-                .thenReturn(this.c);
+	/**
+	 * 해당 강좌의 생성자만 수정할 수 있음. AuthenticationFailedException
+	 */
+	@Test
+	void updateCourseThrowAuthenticationFailedException() {
 
-        // set enabled true
-        this.dto.setEnabled(true);
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(this.course);
 
-        this.c.setEnabled(true);
-        this.c.setActiveDate(LocalDateTime.now());
+		assertThrows(AuthenticationFailedException.class, ()
+				-> courseServiceForAdmin.updateCourse(3L, this.course.getId(),
+				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
-        // add to admin
-        courseList.clear();
-        courseList.add(this.c);
-        this.makeAdmin.setCourses(courseList);
+		verify(courseService, Mockito.times(0)).saveCourse(this.course);
+	}
 
-        AdminCourseResponse result = courseServiceForAdmin.updateCourse(this.makeAdmin.getId(), this.c.getId(), this.dto);
+	/**
+	 * 강좌 수정시 같은 이름 있을 때. AlreadyExistException
+	 */
+	@Test
+	void updateCourseThrowAlreadyExistException() {
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(this.course);
 
-        assertEquals(this.c.getEnabled(), result.getEnabled());
-        assertEquals(this.c.getActiveDate(), result.getActiveTime());
+		when(courseService.findCourseByAdminId(anyLong()))
+				.thenReturn(this.courseList);
 
-        Mockito.verify(adminService).findById(this.makeAdmin.getId());
-        Mockito.verify(courseService).findCourseById(this.c.getId());
-    }
+		this.dto.setName(this.course.getName());
 
-    @Test
-    void inactiveCourse() {
-        when(adminService.findById(anyLong()))
-                .thenReturn(makeAdmin);
+		assertThrows(AlreadyExistException.class, ()
+				-> courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
+				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
-        when(courseService.findCourseById(anyLong()))
-                .thenReturn(this.c);
+		verify(courseService, Mockito.times(0)).saveCourse(this.course);
+	}
 
-        // set enabled false
-        this.dto.setEnabled(false);
+	/**
+	 * 비활성화 Test
+	 */
+	@Test
+	void inactiveCourse() {
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(this.course);
 
-        this.c.setEnabled(false);
+		when(courseService.findCourseByAdminId(anyLong()))
+				.thenReturn(this.courseList);
 
-        // add to admin
-        courseList.clear();
-        courseList.add(this.c);
-        this.makeAdmin.setCourses(courseList);
+		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
 
-        List<Student> students = new ArrayList<>();
-        students.add(mockStudent);
-        this.c.setStudents(students);
+		// set enabled false
+		this.dto.setEnabled(false);
+		this.course.setName("inactive test");
+		this.course.setDescription("inactive test des");
+		this.course.setEnabled(false);
 
-        AdminCourseResponse result = courseServiceForAdmin.updateCourse(this.makeAdmin.getId(), this.c.getId(), this.dto);
+		// add student
+		List<Student> students = new ArrayList<>();
+		students.add(mockStudent);
+		this.course.setStudents(students);
 
-        assertEquals(this.c.getEnabled(), result.getEnabled());
-        assertTrue(this.c.getStudents().size()==0);
+		courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
+				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled());
 
-        Mockito.verify(adminService).findById(this.makeAdmin.getId());
-        Mockito.verify(courseService).findCourseById(this.c.getId());
-    }
+		assertTrue(this.course.getStudents().size() == 0);
 
-    // 추후 개발
-    @Test
-    void deleteCourse() {
-    }
+		verify(courseService).findCourseById(this.course.getId());
+		verify(courseService).findCourseByAdminId(this.admin.getId());
+		verify(courseService).saveCourse(saveCaptor.capture());
+	}
+
+	// 추후 개발
+	@Test
+	void deleteCourse() {
+	}
 }
