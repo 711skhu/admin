@@ -4,10 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.shouwn.oj.config.repository.RepositoryTestConfig;
 import com.shouwn.oj.exception.AlreadyExistException;
 import com.shouwn.oj.exception.AuthenticationFailedException;
-import com.shouwn.oj.exception.IllegalStateException;
+import com.shouwn.oj.exception.NotFoundException;
 import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.entity.member.Student;
 import com.shouwn.oj.model.entity.problem.Course;
@@ -22,21 +21,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(SpringExtension.class)
-@Import(RepositoryTestConfig.class)
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ExtendWith(MockitoExtension.class)
 class CourseServiceForAdminTest {
 
 	@Mock
@@ -92,8 +84,8 @@ class CourseServiceForAdminTest {
 	@Test
 	void getCourseList() {
 
-		when(courseService.findCourseByAdminId(anyLong()))
-				.thenReturn(this.courseList);
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
 		List<Course> result = courseServiceForAdmin.getCourseList(this.admin.getId());
 
@@ -102,7 +94,7 @@ class CourseServiceForAdminTest {
 		assertEquals(courseList.get(0).getDescription(), result.get(0).getDescription());
 		assertEquals(courseList.get(0).getEnabled(), result.get(0).getEnabled());
 
-		verify(courseService).findCourseByAdminId(this.admin.getId());
+		verify(adminService).findById(this.admin.getId());
 	}
 
 	@Test
@@ -111,12 +103,14 @@ class CourseServiceForAdminTest {
 		when(adminService.findById(anyLong()))
 				.thenReturn(Optional.of(this.admin));
 
-		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
+		final ArgumentCaptor<Course> saveCourseCaptor = ArgumentCaptor.forClass(Course.class);
+		final ArgumentCaptor<Admin> updateAdminCaptor = ArgumentCaptor.forClass(Admin.class);
 
 		courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription());
 
 		verify(adminService).findById(this.admin.getId());
-		verify(courseService).saveCourse(saveCaptor.capture());
+		verify(courseService).saveCourse(saveCourseCaptor.capture());
+		verify(adminService).updateAdmin(updateAdminCaptor.capture());
 	}
 
 	/**
@@ -139,11 +133,11 @@ class CourseServiceForAdminTest {
 	@Test
 	void updateCourseSuccess() {
 
-		when(courseService.findCourseById(anyLong()))
-				.thenReturn(this.course);
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
-		when(courseService.findCourseByAdminId(anyLong()))
-				.thenReturn(this.courseList);
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(Optional.of(this.course));
 
 		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
 
@@ -153,8 +147,8 @@ class CourseServiceForAdminTest {
 		courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled());
 
+		verify(adminService).findById(this.admin.getId());
 		verify(courseService).findCourseById(this.course.getId());
-		verify(courseService).findCourseByAdminId(this.admin.getId());
 		verify(courseService).saveCourse(saveCaptor.capture());
 	}
 
@@ -162,9 +156,9 @@ class CourseServiceForAdminTest {
 	 * 강좌 조회시 해당 강좌 없을 때. IllegalStateException
 	 */
 	@Test
-	void updateCourseThrowIllegalStateException() {
+	void updateCourseThrowNotFoundException() {
 
-		assertThrows(IllegalStateException.class, ()
+		assertThrows(NotFoundException.class, ()
 				-> courseServiceForAdmin.updateCourse(this.admin.getId(), 3L,
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
@@ -178,7 +172,7 @@ class CourseServiceForAdminTest {
 	void updateCourseThrowAuthenticationFailedException() {
 
 		when(courseService.findCourseById(anyLong()))
-				.thenReturn(this.course);
+				.thenReturn(Optional.of(this.course));
 
 		assertThrows(AuthenticationFailedException.class, ()
 				-> courseServiceForAdmin.updateCourse(3L, this.course.getId(),
@@ -192,11 +186,11 @@ class CourseServiceForAdminTest {
 	 */
 	@Test
 	void updateCourseThrowAlreadyExistException() {
-		when(courseService.findCourseById(anyLong()))
-				.thenReturn(this.course);
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
-		when(courseService.findCourseByAdminId(anyLong()))
-				.thenReturn(this.courseList);
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(Optional.of(this.course));
 
 		this.dto.setName(this.course.getName());
 
@@ -212,11 +206,11 @@ class CourseServiceForAdminTest {
 	 */
 	@Test
 	void inactiveCourse() {
-		when(courseService.findCourseById(anyLong()))
-				.thenReturn(this.course);
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
 
-		when(courseService.findCourseByAdminId(anyLong()))
-				.thenReturn(this.courseList);
+		when(courseService.findCourseById(anyLong()))
+				.thenReturn(Optional.of(this.course));
 
 		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
 
@@ -236,8 +230,8 @@ class CourseServiceForAdminTest {
 
 		assertTrue(this.course.getStudents().size() == 0);
 
+		verify(adminService).findById(this.admin.getId());
 		verify(courseService).findCourseById(this.course.getId());
-		verify(courseService).findCourseByAdminId(this.admin.getId());
 		verify(courseService).saveCourse(saveCaptor.capture());
 	}
 

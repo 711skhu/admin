@@ -24,7 +24,7 @@ public class CourseController {
 		this.courseServiceForAdmin = courseServiceForAdmin;
 	}
 
-	private AdminCourseResponse responseDto(Course course) {
+	private AdminCourseResponse getCourseResponseDto(Course course) {
 
 		AdminCourseResponse response = AdminCourseResponse.builder()
 				.id(course.getId())
@@ -43,7 +43,7 @@ public class CourseController {
 		List<AdminCourseResponse> result = new ArrayList<>();
 
 		for (Course c : courseLists) {
-			result.add(responseDto(c));
+			result.add(getCourseResponseDto(c));
 		}
 
 		return CommonResponse.builder()
@@ -66,16 +66,16 @@ public class CourseController {
 	}
 
 	@GetMapping("/{courseId}")
-	public ApiResponse<?> getCourse(@RequestAttribute Long requesterId, @PathVariable Long courseId) {
+	public ApiResponse<?> getCourse(@PathVariable Long courseId) {
 
 		Course course;
 
-		course = courseServiceForAdmin.getCourse(requesterId, courseId);
+		course = courseServiceForAdmin.getCourse(courseId);
 
 		return CommonResponse.builder()
 				.status(HttpStatus.OK)
 				.message("해당 강좌 get 성공")
-				.data(responseDto(course))
+				.data(getCourseResponseDto(course))
 				.build();
 	}
 
