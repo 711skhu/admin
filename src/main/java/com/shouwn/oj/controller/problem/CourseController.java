@@ -1,7 +1,7 @@
 package com.shouwn.oj.controller.problem;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.shouwn.oj.model.entity.problem.Course;
 import com.shouwn.oj.model.request.admin.AdminCourseSaveRequest;
@@ -40,11 +40,9 @@ public class CourseController {
 	@GetMapping
 	public ApiResponse<?> getCourseList(@RequestAttribute Long requesterId) {
 		List<Course> courseLists = courseServiceForAdmin.getCourseList(requesterId);
-		List<AdminCourseResponse> result = new ArrayList<>();
 
-		for (Course c : courseLists) {
-			result.add(getCourseResponseDto(c));
-		}
+		List<AdminCourseResponse> result = courseLists.stream().map(course -> getCourseResponseDto(course))
+				.collect(Collectors.toList());
 
 		return CommonResponse.builder()
 				.status(HttpStatus.OK)

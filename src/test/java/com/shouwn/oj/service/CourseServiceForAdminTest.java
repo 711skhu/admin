@@ -158,10 +158,15 @@ class CourseServiceForAdminTest {
 	@Test
 	void updateCourseThrowNotFoundException() {
 
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
+
 		assertThrows(NotFoundException.class, ()
 				-> courseServiceForAdmin.updateCourse(this.admin.getId(), 3L,
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
+		verify(adminService).findById(this.admin.getId());
+		verify(courseService).findCourseById(3L);
 		verify(courseService, Mockito.times(0)).saveCourse(this.course);
 	}
 
@@ -171,6 +176,9 @@ class CourseServiceForAdminTest {
 	@Test
 	void updateCourseThrowAuthenticationFailedException() {
 
+		when(adminService.findById(anyLong()))
+				.thenReturn(Optional.of(this.admin));
+
 		when(courseService.findCourseById(anyLong()))
 				.thenReturn(Optional.of(this.course));
 
@@ -178,6 +186,8 @@ class CourseServiceForAdminTest {
 				-> courseServiceForAdmin.updateCourse(3L, this.course.getId(),
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
+		verify(adminService).findById(3L);
+		verify(courseService).findCourseById(this.course.getId());
 		verify(courseService, Mockito.times(0)).saveCourse(this.course);
 	}
 
@@ -198,6 +208,8 @@ class CourseServiceForAdminTest {
 				-> courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
 
+		verify(adminService).findById(this.admin.getId());
+		verify(courseService).findCourseById(this.course.getId());
 		verify(courseService, Mockito.times(0)).saveCourse(this.course);
 	}
 

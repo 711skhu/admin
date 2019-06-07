@@ -60,9 +60,9 @@ public class CourseServiceForAdmin {
 
 		List<Course> courseList = professor.getCourses();
 
-		if(courseList == null){
+		if (courseList == null) {
 			courseList = new ArrayList<>();
-		}else if (courseList.stream().anyMatch(c -> StringUtils.equals(c.getName(), name))) {
+		} else if (courseList.stream().anyMatch(c -> StringUtils.equals(c.getName(), name))) {
 			throw new AlreadyExistException(name + "라는 이름의 강의를 이미 만들었습니다.");
 		}
 
