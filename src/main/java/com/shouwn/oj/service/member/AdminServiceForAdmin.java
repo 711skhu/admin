@@ -2,11 +2,13 @@ package com.shouwn.oj.service.member;
 
 import java.util.Optional;
 
-import com.shouwn.oj.exception.AuthenticationFailedException;
+import com.shouwn.oj.exception.AlreadyExistException;
 import com.shouwn.oj.exception.NotFoundException;
 import com.shouwn.oj.model.entity.member.Admin;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminServiceForAdmin {
@@ -20,31 +22,37 @@ public class AdminServiceForAdmin {
 	/**
 	 * 관리자를 생성하는 메소드
 	 *
-	 * @param name        관리자 이름
-	 * @param username    관리자 아이디
-	 * @param rawPassword 관리자 패스워드 (인코딩 되지 않은)
-	 * @param email       관리자 이메일
+	 * @param name     관리자 이름
+	 * @param username 관리자 아이디
+	 * @param password 관리자 패스워드
+	 * @param email    관리자 이메일
 	 * @return 생성된 관리자 객체
 	 */
+	@Transactional(isolation = Isolation.SERIALIZABLE)
 	public Admin makeAdmin(String name,
 						   String username,
-						   String rawPassword,
+						   String password,
 						   String email) {
-		return adminService.makeAdmin(name, username, rawPassword, email);
+		Admin admin = Admin.builder()
+				.name(name)
+				.username(username)
+				.password(password)
+				.email(email)
+				.build();
+
+		checkPossibleToMake(admin);
+
+		return adminService.save(admin);
 	}
 
-	public Admin login(String username, String rawPassword) {
-		Optional<Admin> admin = adminService.findByUsername(username);
-
-		if (!admin.isPresent()) {
-			throw new NotFoundException(username + "에 해당하는 유저가 없습니다.");
+	private void checkPossibleToMake(Admin admin) {
+		if (adminService.isRegisteredUsername(admin.getUsername())) {
+			throw new AlreadyExistException(admin.getUsername() + " 은 이미 등록된 아이디입니다.");
 		}
 
-		if (!adminService.isCorrectPassword(admin.get(), rawPassword)) {
-			throw new AuthenticationFailedException("비밀번호가 다릅니다.");
+		if (adminService.isRegisteredEmail(admin.getEmail())) {
+			throw new AlreadyExistException(admin.getEmail() + " 은 이미 등록된 이메일입니다.");
 		}
-
-		return admin.get();
 	}
 
 	public Admin findById(Long id) {
