@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("student/auth")
+@RequestMapping("admin/auth")
 public class AdminAuthController {
 
 	private final JwtProvider jwtProvider;
