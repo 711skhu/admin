@@ -30,3 +30,4 @@ querydsl/
 
 ### properties ###
 application-security.yml
+application-datasource.yml
