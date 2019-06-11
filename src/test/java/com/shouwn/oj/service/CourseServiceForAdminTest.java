@@ -1,7 +1,5 @@
 package com.shouwn.oj.service;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -84,35 +84,13 @@ class CourseServiceForAdminTest {
 
 	}
 
-	private void invokeMethod(String methodName, Class c, Object... params) {
-
-		Method method;
-		Class<?>[] parameters = new Class<?>[params.length];
-
-		for (int i = 0; i < params.length; ++i) {
-			if (params[i].getClass().getName().contains("ArrayList")) {
-				parameters[i] = List.class;
-				continue;
-			}
-			parameters[i] = params[i].getClass();
-		}
-
-		try {
-			method = courseServiceForAdmin.getClass().getDeclaredMethod(methodName, parameters);
-			method.setAccessible(true);
-			method.invoke(courseServiceForAdmin, params);
-		} catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-			assertEquals(e.getCause().getClass().getName(), c.getName());
-		}
-	}
-
 	/**
 	 * 교수 조회시 해당 교수 없을 때. IllegalStateException (강좌관련 전제조건이라 IllegalState)
 	 */
 	@Test
 	void adminThrowIllegalState() {
 
-		invokeMethod("adminFindByIdOrThrowIllegalState", IllegalStateException.class, 3L);
+		assertThrows(IllegalStateException.class, () -> ReflectionTestUtils.invokeMethod(courseServiceForAdmin, "adminFindByIdOrThrowIllegalState", 3L));
 
 		verify(adminService).findById(3L);
 	}
@@ -123,7 +101,7 @@ class CourseServiceForAdminTest {
 	@Test
 	void courseThrowNotFound() {
 
-		invokeMethod("courseFindByIdOrThrowNotFound", NotFoundException.class, 3L);
+		assertThrows(NotFoundException.class, () -> ReflectionTestUtils.invokeMethod(courseServiceForAdmin, "courseFindByIdOrThrowNotFound", 3L));
 
 		verify(courseService).findCourseById(3L);
 	}
@@ -153,6 +131,8 @@ class CourseServiceForAdminTest {
 		final ArgumentCaptor<Course> saveCourseCaptor = ArgumentCaptor.forClass(Course.class);
 
 		courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription());
+
+		assertEquals(this.admin.getCourses().get(1).getName(), this.dto.getName());
 
 		verify(adminService).findById(this.admin.getId());
 		verify(courseService).saveCourse(saveCourseCaptor.capture());
@@ -210,7 +190,7 @@ class CourseServiceForAdminTest {
 
 		this.dto.setName(this.course.getName());
 
-		invokeMethod("checkCourseName", AlreadyExistException.class, this.admin.getCourses(), this.dto.getName());
+		assertThrows(AlreadyExistException.class, () -> ReflectionTestUtils.invokeMethod(courseServiceForAdmin, "checkCourseName", this.admin.getCourses(), this.dto.getName()));
 	}
 
 	/**
