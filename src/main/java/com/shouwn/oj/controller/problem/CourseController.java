@@ -66,9 +66,7 @@ public class CourseController {
 	@GetMapping("/{courseId}")
 	public ApiResponse<?> getCourse(@PathVariable Long courseId) {
 
-		Course course;
-
-		course = courseServiceForAdmin.getCourse(courseId);
+		Course course = courseServiceForAdmin.getCourse(courseId);
 
 		return CommonResponse.builder()
 				.status(HttpStatus.OK)

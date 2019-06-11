@@ -93,9 +93,9 @@ public class CourseServiceForAdmin {
 				.professor(professor)
 				.build();
 
-		courseService.saveCourse(course);
-
 		professor.getCourses().add(course);
+
+		courseService.saveCourse(course);
 	}
 
 	/**
