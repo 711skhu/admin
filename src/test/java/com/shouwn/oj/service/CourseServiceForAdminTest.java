@@ -133,6 +133,7 @@ class CourseServiceForAdminTest {
 		courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription());
 
 		assertEquals(this.admin.getCourses().get(1).getName(), this.dto.getName());
+		assertEquals(this.admin.getCourses().get(1).getEnabled(), false);
 
 		verify(adminService).findById(this.admin.getId());
 		verify(courseService).saveCourse(saveCourseCaptor.capture());
@@ -147,17 +148,18 @@ class CourseServiceForAdminTest {
 		when(courseService.findCourseById(anyLong()))
 				.thenReturn(Optional.of(this.course));
 
-		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
-
 		dto.setName("test update name");
 		dto.setDescription("test update description");
 
 		courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
 				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled());
 
+		assertEquals(this.course.getName(), this.dto.getName());
+		assertEquals(this.course.getDescription(), this.dto.getDescription());
+		assertEquals(this.course.getEnabled(), this.dto.getEnabled());
+
 		verify(adminService).findById(this.admin.getId());
 		verify(courseService).findCourseById(this.course.getId());
-		verify(courseService).saveCourse(saveCaptor.capture());
 	}
 
 	/**
@@ -204,8 +206,6 @@ class CourseServiceForAdminTest {
 		when(courseService.findCourseById(anyLong()))
 				.thenReturn(Optional.of(this.course));
 
-		final ArgumentCaptor<Course> saveCaptor = ArgumentCaptor.forClass(Course.class);
-
 		// set enabled false
 		this.dto.setEnabled(false);
 		this.course.setName("inactive test");
@@ -224,7 +224,6 @@ class CourseServiceForAdminTest {
 
 		verify(adminService).findById(this.admin.getId());
 		verify(courseService).findCourseById(this.course.getId());
-		verify(courseService).saveCourse(saveCaptor.capture());
 	}
 
 	// 추후 개발

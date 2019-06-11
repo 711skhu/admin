@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * 프로젝트 생성, 수정 후 바로 프로젝트 상세 페이지의 정보를 보여주기 위함.
+ * 프로젝트 상세 페이지의 정보를 보여주기 위함.
  */
 @Getter
 public class AdminCourseResponse {

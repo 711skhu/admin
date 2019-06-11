@@ -89,6 +89,7 @@ public class CourseServiceForAdmin {
 		Course course = Course.builder()
 				.name(name)
 				.description(description)
+				.enabled(false)
 				.professor(professor)
 				.build();
 
@@ -133,8 +134,6 @@ public class CourseServiceForAdmin {
 		course.setDescription(description);
 
 		course.activeCourse(enabled);
-
-		courseService.saveCourse(course);
 	}
 
 	/**
