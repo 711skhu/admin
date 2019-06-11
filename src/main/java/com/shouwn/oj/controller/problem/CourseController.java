@@ -41,7 +41,7 @@ public class CourseController {
 	public ApiResponse<?> getCourseList(@RequestAttribute Long requesterId) {
 		List<Course> courseLists = courseServiceForAdmin.getCourseList(requesterId);
 
-		List<AdminCourseResponse> result = courseLists.stream().map(course -> getCourseResponseDto(course))
+		List<AdminCourseResponse> result = courseLists.stream().map(this::getCourseResponseDto)
 				.collect(Collectors.toList());
 
 		return CommonResponse.builder()

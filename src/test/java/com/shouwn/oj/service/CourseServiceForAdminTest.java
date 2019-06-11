@@ -1,11 +1,14 @@
 package com.shouwn.oj.service;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import com.shouwn.oj.exception.AlreadyExistException;
 import com.shouwn.oj.exception.AuthenticationFailedException;
+import com.shouwn.oj.exception.IllegalStateException;
 import com.shouwn.oj.exception.NotFoundException;
 import com.shouwn.oj.model.entity.member.Admin;
 import com.shouwn.oj.model.entity.member.Student;
@@ -81,6 +84,50 @@ class CourseServiceForAdminTest {
 
 	}
 
+	private void invokeMethod(String methodName, Class c, Object... params) {
+
+		Method method;
+		Class<?>[] parameters = new Class<?>[params.length];
+
+		for (int i = 0; i < params.length; ++i) {
+			if (params[i].getClass().getName().contains("ArrayList")) {
+				parameters[i] = List.class;
+				continue;
+			}
+			parameters[i] = params[i].getClass();
+		}
+
+		try {
+			method = courseServiceForAdmin.getClass().getDeclaredMethod(methodName, parameters);
+			method.setAccessible(true);
+			method.invoke(courseServiceForAdmin, params);
+		} catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+			assertEquals(e.getCause().getClass().getName(), c.getName());
+		}
+	}
+
+	/**
+	 * 교수 조회시 해당 교수 없을 때. IllegalStateException (강좌관련 전제조건이라 IllegalState)
+	 */
+	@Test
+	void adminThrowIllegalState() {
+
+		invokeMethod("adminFindByIdOrThrowIllegalState", IllegalStateException.class, 3L);
+
+		verify(adminService).findById(3L);
+	}
+
+	/**
+	 * 강좌 조회시 해당 강좌 없을 때. NotFoundException
+	 */
+	@Test
+	void courseThrowNotFound() {
+
+		invokeMethod("courseFindByIdOrThrowNotFound", NotFoundException.class, 3L);
+
+		verify(courseService).findCourseById(3L);
+	}
+
 	@Test
 	void getCourseList() {
 
@@ -104,30 +151,11 @@ class CourseServiceForAdminTest {
 				.thenReturn(Optional.of(this.admin));
 
 		final ArgumentCaptor<Course> saveCourseCaptor = ArgumentCaptor.forClass(Course.class);
-		final ArgumentCaptor<Admin> updateAdminCaptor = ArgumentCaptor.forClass(Admin.class);
 
 		courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription());
 
 		verify(adminService).findById(this.admin.getId());
 		verify(courseService).saveCourse(saveCourseCaptor.capture());
-		verify(adminService).updateAdmin(updateAdminCaptor.capture());
-	}
-
-	/**
-	 * 강좌 생성시 같은 이름 있을 때. AlreadyExistException
-	 */
-	@Test
-	void makeCourseThrowAlreadyExistException() {
-
-		when(adminService.findById(anyLong()))
-				.thenReturn(Optional.of(this.admin));
-
-		this.dto.setName(this.course.getName());
-
-		assertThrows(AlreadyExistException.class, ()
-				-> courseServiceForAdmin.makeCourse(this.admin.getId(), this.dto.getName(), this.dto.getDescription()));
-
-		verify(courseService, Mockito.times(0)).saveCourse(this.course);
 	}
 
 	@Test
@@ -153,24 +181,6 @@ class CourseServiceForAdminTest {
 	}
 
 	/**
-	 * 강좌 조회시 해당 강좌 없을 때. IllegalStateException
-	 */
-	@Test
-	void updateCourseThrowNotFoundException() {
-
-		when(adminService.findById(anyLong()))
-				.thenReturn(Optional.of(this.admin));
-
-		assertThrows(NotFoundException.class, ()
-				-> courseServiceForAdmin.updateCourse(this.admin.getId(), 3L,
-				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
-
-		verify(adminService).findById(this.admin.getId());
-		verify(courseService).findCourseById(3L);
-		verify(courseService, Mockito.times(0)).saveCourse(this.course);
-	}
-
-	/**
 	 * 해당 강좌의 생성자만 수정할 수 있음. AuthenticationFailedException
 	 */
 	@Test
@@ -191,26 +201,16 @@ class CourseServiceForAdminTest {
 		verify(courseService, Mockito.times(0)).saveCourse(this.course);
 	}
 
+
 	/**
-	 * 강좌 수정시 같은 이름 있을 때. AlreadyExistException
+	 * 강좌 생성,수정시 같은 이름 있을 때. AlreadyExistException
 	 */
 	@Test
-	void updateCourseThrowAlreadyExistException() {
-		when(adminService.findById(anyLong()))
-				.thenReturn(Optional.of(this.admin));
-
-		when(courseService.findCourseById(anyLong()))
-				.thenReturn(Optional.of(this.course));
+	void courseThrowAlreadyExistException() {
 
 		this.dto.setName(this.course.getName());
 
-		assertThrows(AlreadyExistException.class, ()
-				-> courseServiceForAdmin.updateCourse(this.admin.getId(), this.course.getId(),
-				this.dto.getName(), this.dto.getDescription(), this.dto.getEnabled()));
-
-		verify(adminService).findById(this.admin.getId());
-		verify(courseService).findCourseById(this.course.getId());
-		verify(courseService, Mockito.times(0)).saveCourse(this.course);
+		invokeMethod("checkCourseName", AlreadyExistException.class, this.admin.getCourses(), this.dto.getName());
 	}
 
 	/**
