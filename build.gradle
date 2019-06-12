@@ -2,8 +2,5 @@ group 'com.shouwn.oj'
 version '0.0.1'
 
 dependencies {
-    // web
-    compile 'org.springframework.boot:spring-boot-starter-actuator'
-    
     compile project(':core')
 }

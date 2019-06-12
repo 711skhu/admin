@@ -13,6 +13,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AdminJwtProperties implements JwtProperties {
 
 	private String secretKey;
-
-	private long expirationMs;
 }
